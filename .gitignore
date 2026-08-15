@@ -1,0 +1,15 @@
+.DS_Store
+.farmwork/
+.nabu-dev/
+/tmp/
+/package-lock.json
+bin/
+coverage/
+frontend/dist/
+frontend/node_modules/
+webassets/dist/*
+!webassets/dist/.gitkeep
+*.db
+*.db-shm
+*.db-wal
+*.log
