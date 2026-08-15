@@ -1,674 +1,311 @@
 # Nabu.sh — Product Requirements Document
 
-## Product
+| Field | Value |
+| --- | --- |
+| Product | Nabu.sh |
+| PRD version | 2.0 |
+| Product stage | Feature-complete alpha; release hardening |
+| Updated | August 15, 2026 |
+| Platforms | macOS first, Linux supported |
+| Canonical repository | https://github.com/WynterJones/nabu.sh |
+| Primary AI runtime | Authenticated local Codex CLI |
 
-**Nabu** is a local, always-on AI operator with one mission.
+## 1. Product definition
 
-The user installs Nabu on a Mac or Linux computer, opens a polished dark-mode web UI, gives Nabu a mission and access to selected workspaces, and lets it work continuously.
+Nabu is a local, always-on AI operator that turns a mission into durable, verified work.
 
-Nabu uses the user's existing **Codex CLI** installation as its only AI engine.
+The user installs Nabu on a computer, creates one or more isolated workspaces, gives each workspace a mission and enough context to act, and then collaborates with one persistent operator through Chat. Nabu plans work, executes bounded tasks with Codex, uses approved tools, stores structured knowledge, schedules future checks, and surfaces results without requiring the user to manage agent sessions.
 
-Nabu itself does not implement an LLM agent loop and does not require an OpenAI API integration. It supervises Codex processes, owns durable state, manages a task queue, enforces simple approval rules, stores reports and memory, and provides a clean web interface for steering the operator.
+Nabu owns the operating system around the AI:
+
+- durable mission and workspace context
+- a dependency-aware task queue
+- schedules and deterministic scripts
+- approved secrets and MCP connectors
+- supervised Codex runs
+- datasets, files, apps, reports, and artifacts
+- policy and approval enforcement
+- recovery, backups, and health state
+- a polished local web interface
+
+Codex supplies reasoning and execution. Nabu supplies continuity, organization, policy, and evidence.
 
 The product should feel like:
 
-> Install an AI operator, give it a mission, and check in when it needs you.
+> Give one capable operator a mission, the context and tools to succeed, and a clear place to see what it did.
 
----
+## 2. Core promise
 
-# Core Promise
+Nabu must answer these questions immediately:
 
-Nabu should answer four questions immediately:
+1. What is the mission for this workspace?
+2. What is Nabu doing now?
+3. What is planned next, and why?
+4. What has Nabu produced?
+5. What genuinely needs the user?
 
-1. **What is the mission?**
-2. **What is Nabu doing right now?**
-3. **What has Nabu accomplished?**
-4. **What needs my approval or direction?**
+Every product surface must support one or more of these questions.
 
-Everything in the product should support those questions.
+## 3. Product principles
 
----
+### 3.1 One operator, multiple isolated workspaces
 
-# Product Ethos
+The user interacts with one personality: Nabu.
 
-## One Mission
+Each workspace is an independent business or project scope with its own:
 
-Nabu has one active mission.
+- mission
+- context readiness
+- Chat history and threads
+- tasks and dependencies
+- calendar and schedules
+- datasets
+- apps and outputs
+- reports
+- memory and Soul
+- secrets, scripts, MCP connectors, and policy
 
-Every task must support that mission.
+Switching workspaces must never leak state, secrets, records, or context between scopes.
 
-Nabu should prefer finishing useful work over generating a large backlog.
+Codex runs are internal workers. The UI must not invent a fake organization of named agents.
 
----
+### 3.2 Chat is the front door; durable state is the operating system
 
-## One Operator
+Chat is the default page and the primary way to plan, steer, explain, and resolve work.
 
-The user interacts with one personality: **Nabu**.
+A useful conversation should promote important information into durable state when appropriate:
 
-Codex processes are internal workers.
+- mission or context updates
+- tasks, dependencies, and planned dates
+- schedules and plans
+- policies and approvals
+- memory and Soul proposals
+- scripts, secrets, or MCP capability requests
+- datasets and structured records
+- reports and artifacts
 
-The UI must not expose a fake organization of named AI agents.
+Chat history is not the sole source of truth.
 
----
+### 3.3 Proactive, not reckless
 
-## Queue Over Chat
+Nabu should gather missing context, propose useful work, and take safe reversible action without requiring continual hand-holding.
 
-Chat is a steering interface.
+Nabu should automatically:
 
-The task queue is the operating system.
+- read approved workspace files
+- inspect approved repositories
+- research public information
+- use read-only MCP tools
+- run tests and verification
+- edit files inside approved workspaces
+- create branches and local commits
+- create tasks, plans, datasets, reports, and drafts
+- run approved read-only scripts
+- organize outputs into the workspace layout
 
-A useful chat message should normally change durable state by:
+Nabu should ask before actions that are externally consequential or difficult to reverse:
 
-- updating the mission
-- adding context
-- creating a task
-- changing task priority
-- cancelling work
-- approving work
-- changing a policy
-- recording a durable decision
+- production deployment
+- public publishing or messaging
+- spending or billing changes
+- production data mutation
+- authentication and security changes
+- protected-branch merge
+- destructive filesystem or workspace deletion
 
-Chat should not become the only place important information exists.
+Approvals must protect real boundaries, not ordinary progress.
 
----
+### 3.4 Evidence over claims
 
-## Durable State Outside Codex
+Nabu must not claim work is complete because a model said so.
 
-Nabu must continue operating correctly when:
+Evidence may include:
 
-- Codex exits
-- Codex crashes
-- a run times out
-- the browser UI is closed
-- the computer restarts
-- a task fails
-- Codex usage is temporarily unavailable
+- command exit status
+- tests, builds, lint, or type checks
+- changed files or Git diff
+- structured dataset write results
+- HTTP or API checks
+- MCP tool results
+- browser observations and screenshots
+- generated artifacts
+- a running local app health check
+- report links
 
-Mission, tasks, reports, approvals, configuration, and history belong to Nabu.
+If only part of the requested work is verified, preserve the work and describe the remaining step accurately. Use “Needs You” or “Needs another step” rather than a misleading destructive-looking failure state when appropriate.
 
----
+### 3.5 Mostly sleeping
 
-## Evidence Over Claims
+Nabu is always available, not always invoking AI.
 
-A Codex response is not enough to mark important work complete.
+The daemon owns timers, health checks, leases, retries, queue state, schedules, and recovery. Codex is invoked only for reasoning or execution.
 
-Where practical, tasks should have observable evidence such as:
+When no runnable work exists, an idle steward may re-evaluate the workspace at a conservative interval, normally no more than once every 15 minutes. It may create one to three useful tasks only when evidence supports them. It may also decide that nothing should happen until a future condition or date.
 
-- exit code
-- test output
-- build output
-- changed files
-- Git diff
-- URL check
-- generated artifact
-- screenshot
-- pull request URL
-- script result
-- structured report
-
----
-
-## Safe but Not Annoying
-
-Nabu should be allowed to research and prepare work without repeatedly interrupting the user.
-
-Simple default:
-
-### Allow Automatically
-
-- read files
-- inspect repositories
-- use approved scripts
-- search/read the web
-- run tests
-- run local commands
-- edit files in approved workspaces
-- create branches
-- create local commits
-- generate drafts
-- create reports
-
-### Ask First
-
-- merge to protected branches
-- deploy production
-- publish public content
-- send external messages
-- modify production data
-- delete important data
-- spend money
-- change billing
-- change authentication/security settings
-
-The user can change individual approval rules.
-
----
-
-## 24/7 Means Mostly Sleeping
-
-Nabu must not continuously call Codex just to prove it is alive.
-
-The daemon should handle:
-
-- timers
-- schedules
-- worker status
-- queue state
-- retries
-- approvals
-- process recovery
-
-Codex should be invoked only when reasoning or execution is required.
-
----
-
-## Keep Infrastructure Boring
+### 3.6 Keep infrastructure boring
 
 Prefer:
 
 - Go
 - SQLite
-- React
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- filesystem
-- Git
+- React and TypeScript
+- Tailwind CSS and shadcn/Radix primitives
+- filesystem and Git
 - Codex CLI
-- HTTP
-- Server-Sent Events
-- Markdown
+- MCP
+- HTTP and Server-Sent Events
+- Markdown and typed JSON
 
-Avoid unnecessary distributed infrastructure.
+Avoid cloud infrastructure that is not required for a local operator.
 
----
+## 4. Target users and use cases
 
-# Primary Use Case
+Nabu is intended for an owner, developer, researcher, or small team that wants a persistent local operator rather than a disposable chat session.
 
-The initial working mission can be:
+Representative missions include:
 
-> Grow qualified traffic, product usage, and paid adoption across Wynter.ai.
+- grow and operate a collection of web products
+- maintain and improve a software portfolio
+- research markets, competitors, products, or technical options
+- monitor analytics, errors, support signals, or infrastructure
+- build and maintain datasets and research libraries
+- create documents, reports, media, and local applications
+- plan a multi-week initiative and execute its next safe steps
+- maintain Nabu itself from a separate source checkout
 
-Nabu should be capable of work such as:
+The architecture must remain mission-agnostic.
 
-- inspect website repositories
-- review analytics exports
-- review Search Console data
-- research competitors
-- find SEO opportunities
-- inspect pages
-- identify broken or weak pages
-- prepare new pages
-- improve copy
-- fix code
-- run tests
-- prepare Git changes
-- create reports
-- monitor recurring metrics
-- notice changes
-- create follow-up tasks
-- ask for approval before high-impact actions
+## 5. Workspace model
 
-The core architecture must remain mission-agnostic.
+### 5.1 Workspace lifecycle
 
----
+A user can create an organized workspace or connect an existing folder.
 
-# Product Surface
+Every newly created workspace receives its own onboarding conversation. A new workspace is not treated as ready merely because another workspace completed setup.
 
-Nabu has five primary areas:
+During onboarding Nabu should establish:
 
-1. **Overview**
-2. **Tasks**
-3. **Reports**
-4. **Chat**
-5. **Settings**
+- whether the user is starting fresh or connecting an existing operation
+- the desired outcome and timeframe
+- current assets, repositories, sites, documents, and datasets
+- target users or customers
+- current baseline and measurable success signals
+- available services, accounts, APIs, and MCP connectors
+- approval, legal, financial, security, and publishing constraints
+- what Nabu can safely begin without further input
 
-There is no separate Advanced mode.
+Operational pages remain gated until context is ready. Chat and Settings remain available so setup can be completed.
 
-Implementation details remain secondary.
+Nabu should consolidate questions rather than asking one small question at a time. When it believes context is sufficient, Chat should present a clear confirmation action.
 
----
+### 5.2 Organized workspace layout
 
-# User Experience
-
-## Install
-
-Example installation:
-
-```bash
-curl -fsSL https://nabu.sh/install.sh | bash
-nabu setup
-```
-
-Setup verifies:
-
-- Codex CLI is installed
-- Codex is authenticated
-- Git is installed
-- local workspace is writable
-- Nabu service can be installed
-
-Nabu then creates its local workspace, installs the background service, starts the local server, and opens the UI.
-
-Default UI:
+Nabu-created workspaces use:
 
 ```text
-http://127.0.0.1:7777
+workspace/
+├── inbox/
+├── documents/
+├── media/
+├── research/
+├── data/
+├── repos/
+├── reports/
+├── deliverables/
+└── archive/
 ```
 
-The browser is only the interface.
+Placement rules:
 
-Closing the browser must not stop Nabu.
+- applications and source repositories belong in `repos/<project>/`
+- durable documents belong in `documents/`
+- research source material belongs in `research/`
+- imported or generated data files belong in `data/`
+- reports belong in `reports/`
+- final handoff material belongs in `deliverables/`
+- disposable incoming material may begin in `inbox/`
 
----
+Nabu must not scatter application source across the workspace root.
 
-# First-Run Setup
+Connecting an existing folder must not reorganize or overwrite it automatically.
 
-The first-run experience should be short.
+### 5.3 Workspace deletion
 
-## Step 1 — Name
+The user must be able to remove a workspace from Nabu.
 
-Default:
+Default deletion removes Nabu’s scoped records and leaves the filesystem intact. Deleting filesystem contents is a separate destructive action requiring explicit confirmation that names the exact path. The active or only workspace cannot be removed without selecting or creating a safe replacement.
 
-```text
-Nabu
-```
+## 6. Product surface
 
-The user may change the display name.
+The primary product areas are:
 
----
+1. Chat
+2. Tasks
+3. Calendar
+4. Database
+5. Apps
+6. Outputs
+7. Reports
+8. Settings
 
-## Step 2 — Mission
+There is no separate “advanced mode.” Complexity is revealed only where it helps the user complete work.
 
-Prompt:
+### 6.1 Application shell
 
-> What should Nabu be responsible for accomplishing?
+Desktop uses a compact floating navigation rail rather than reserving a full sidebar column. The page canvas may use the full window width.
 
-Example:
+The shell contains:
 
-```text
-Grow qualified traffic, users, and paid adoption for Wynter.ai.
-```
+- Nabu wordmark
+- current page title
+- Codex model and reasoning badges
+- Nabu mascot and compact status indicator
+- Pause or Resume
+- workspace switcher
+- direct Chat action
+- primary navigation flyout
+- Settings flyout
 
----
+Navigation cues may show:
 
-## Step 3 — Context
+- Chat activity or unread lifecycle messages
+- Needs You task count
+- current date beside Calendar
+- dataset count
+- unread report count
 
-The user can provide a short description of:
+Hover must never leave a false active state. Flyouts must remain reachable while the pointer moves from their trigger into the menu.
 
-- business
-- products
-- audience
-- priorities
-- important constraints
+Mobile uses a conventional full-screen drawer and touch-safe controls.
 
-This becomes durable workspace context.
+### 6.2 Chat
 
----
+Chat is the default route.
 
-## Step 4 — Workspaces
+Each workspace has one durable primary conversation. It shows the newest messages first as a bounded page and can load older messages without passing the full history into every Codex run.
 
-The user selects folders or Git repositories Nabu may work in.
+Requirements:
 
-Example:
+- durable FIFO user-message queue
+- Chat execution lane independent from task workers
+- Chat can respond while tasks run
+- streamed Markdown with headings, lists, tables, code, links, and redacted-secret badges
+- automatic scroll when a user sends a message or Nabu begins thinking, unless the user intentionally scrolled away
+- Slack-style threads attached to assistant messages
+- thread panel pushes desktop layout instead of blocking it with an overlay
+- user messages do not need avatars or thread actions
+- assistant lifecycle messages may arrive when tasks start, complete, fail, or need approval
+- messages and their threads can be deleted with confirmation
+- important references render as compact task, report, dataset, app, file, approval, or secret-setup cards
+- action cards support buttons, choices, approvals, and protected secret entry
 
-```text
-~/Code/wynter-ai
-~/Code/barnumpt
-~/Code/account-wynter-ai
-```
+Chat accepts stream-of-thought input. Nabu should organize mixed ideas into context, memory, datasets, plans, schedules, or tasks rather than blindly converting every sentence into immediate work.
 
-Nabu must never assume access outside approved workspaces.
+### 6.3 Tasks
 
----
+Tasks are durable units of executable work.
 
-## Step 5 — Autonomy
-
-Show a short permissions screen.
-
-Example:
-
-```text
-Research and read                 Allow
-Edit approved workspaces          Allow
-Run local scripts/tests           Allow
-Create branches/commits           Allow
-Create draft work                 Allow
-
-Merge protected branches          Ask
-Deploy production                 Ask
-Publish publicly                  Ask
-Send external messages            Ask
-Delete important data             Ask
-Spend money                       Ask
-```
-
----
-
-## Step 6 — Start
-
-The final setup screen summarizes:
-
-```text
-Nabu is ready.
-
-Mission:
-Grow qualified traffic, users, and paid adoption for Wynter.ai.
-
-Codex:
-Connected
-
-Workspaces:
-3
-
-Autonomy:
-Research + local work allowed
-External changes require approval
-```
-
-Primary action:
-
-**Start Mission**
-
----
-
-# Dark UI Direction
-
-Nabu is dark mode only.
-
-The interface should feel:
-
-- calm
-- technical
-- polished
-- minimal
-- trustworthy
-- high-density without being cluttered
-
-Avoid:
-
-- glowing sci-fi dashboards
-- fake terminal decoration
-- excessive gradients
-- giant cards
-- excessive charts
-- excessive status badges
-- fake agent avatars
-- bright saturated backgrounds
-
-Use:
-
-- near-black background
-- slightly lighter surfaces
-- subtle borders
-- muted text
-- one restrained green/teal accent
-- amber only for approvals/warnings
-- red only for real failures/destructive actions
-- compact typography
-- clear hierarchy
-
----
-
-# Frontend Architecture
-
-## Stack
-
-Use:
-
-```text
-React
-TypeScript
-Vite
-Tailwind CSS
-shadcn/ui
-Radix primitives
-Lucide icons
-```
-
-The frontend is compiled into static assets.
-
-The Go application embeds the production frontend assets into the Nabu binary.
-
-This avoids requiring a separate Node.js web server in production.
-
-Development may run the Vite dev server separately.
-
----
-
-# Vercel Chatbot Usage
-
-Vercel's `vercel/chatbot` project should be treated as a **chat UX/component reference**, not as Nabu's application architecture.
-
-Useful concepts/components to adopt or adapt:
-
-- polished message list
-- streaming assistant messages
-- markdown rendering
-- syntax-highlighted code blocks
-- copy controls
-- attachment presentation
-- scroll-to-bottom behavior
-- conversation loading states
-- inline tool/activity presentation
-- responsive chat composer
-- keyboard behavior
-- shadcn/Radix visual primitives
-
-Do not carry over infrastructure Nabu does not need:
-
-- AI Gateway
-- direct model-provider APIs
-- multi-model selector
-- hosted authentication
-- Neon/Postgres
-- Vercel Blob
-- cloud deployment requirements
-- server-side model execution
-- Vercel-specific persistence
-
-All chat requests go:
-
-```text
-React UI
-   ↓
-nabud
-   ↓
-Codex CLI
-```
-
-Nabu owns the conversation state.
-
-Codex provides reasoning.
-
----
-
-# Main Layout
-
-Desktop layout:
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│ NABU                                      ● ACTIVE    Pause │
-├──────────────┬──────────────────────────────────────────────┤
-│              │                                              │
-│ Overview     │                                              │
-│ Tasks        │               Current Page                   │
-│ Reports      │                                              │
-│ Chat         │                                              │
-│              │                                              │
-│ Settings     │                                              │
-│              │                                              │
-├──────────────┴──────────────────────────────────────────────┤
-│ Ask or steer Nabu...                                       │
-└─────────────────────────────────────────────────────────────┘
-```
-
-The global composer may appear on Overview and optionally other operational screens.
-
-Full Chat has its own larger composer.
-
----
-
-# Overview
-
-Overview is the default page.
-
-It should answer the state of the mission without requiring navigation.
-
-## Header
-
-Show:
-
-- Nabu
-- current status
-- Pause / Resume
-- settings shortcut
-
-Status should be one of:
-
-```text
-Working
-Idle
-Waiting for Approval
-Paused
-Needs Attention
-```
-
-Avoid exposing internal worker terminology here.
-
----
-
-## Mission
-
-Compact mission block:
-
-```text
-MISSION
-
-Grow qualified traffic, product usage, and paid adoption
-across Wynter.ai.
-```
-
-Allow quick edit.
-
-Mission changes require confirmation because they can reprioritize the queue.
-
----
-
-## Current Work
-
-Show the most important active task.
-
-Example:
-
-```text
-NOW
-
-Researching Search Console opportunities
-
-Nabu is comparing high-impression queries against
-existing product pages.
-
-Started 18m ago
-
-[View Task]
-```
-
-If no task is running:
-
-```text
-Nabu is idle.
-Next orientation in 42m.
-```
-
----
-
-## Queue
-
-Show a maximum of five upcoming tasks.
-
-Example:
-
-```text
-NEXT
-
-1. Prepare landing page for funnel design review
-2. Investigate VSLMachine signup drop
-3. Repair structured data on /tools
-
-[View All Tasks]
-```
-
----
-
-## Needs You
-
-Only show when action is required.
-
-Example:
-
-```text
-NEEDS YOU
-
-Publish "AI Funnel Design Review"
-
-Nabu completed the page, tests passed, and a preview is ready.
-
-[Review] [Approve]
-```
-
-Approvals should be visually obvious without dominating the page.
-
----
-
-## Latest Results
-
-Show recent meaningful completed work.
-
-Example:
-
-```text
-LATEST RESULTS
-
-Search opportunity analysis
-Found 14 underserved queries and prepared one page brief.
-
-Site health
-Fixed three broken internal links.
-
-Conversion review
-Identified a signup drop beginning after the latest release.
-```
-
----
-
-## Mission Score
-
-Optional metrics configured by the user.
-
-Keep this intentionally small.
-
-Maximum default visible metrics: 4.
-
-Example:
-
-```text
-Visitors     1,240   +18%
-Signups         72    +9%
-Trials          31   +11%
-Sales            9    +3%
-```
-
-Metrics are not required for Nabu to function.
-
----
-
-# Tasks
-
-Tasks are the operational center of Nabu.
-
-## Task States
+States:
 
 ```text
 Idea
@@ -681,694 +318,303 @@ Failed
 Cancelled
 ```
 
-`Idea` is intentionally separate from `Ready`.
-
-Nabu can record potentially useful work without allowing the active queue to grow endlessly.
-
----
-
-# Task List
-
-Default grouping:
-
-```text
-Running
-Needs You
-Ready
-Completed
-```
-
-Each task row shows only:
+Each task contains:
 
 - title
-- status
-- priority
-- age/duration
-- workspace if relevant
-
----
-
-# Task Detail
-
-Task detail includes:
-
-## Summary
-
-```text
-Title
-Purpose
-Related mission/objective
-Status
-Priority
-Created by
-```
-
----
-
-## Why This Matters
-
-One short explanation tying the task to the mission.
-
----
-
-## Definition of Done
-
-Checklist of required outcomes.
-
-Example:
-
-```text
-- Page route exists
-- Metadata is present
-- Internal links added
-- Build passes
-- Screenshot generated
-```
-
----
-
-## Activity
-
-Human-readable activity stream:
-
-```text
-23:02 Started Codex run
-23:03 Read Search Console report
-23:07 Inspected /tools pages
-23:11 Modified landing page
-23:14 Ran test suite
-23:16 Generated preview
-```
-
-Do not dump every token or low-level event into the default activity list.
-
----
-
-## Output
-
-Show:
-
-- summary
-- files changed
-- Git diff link/view
-- reports
-- screenshots
-- URLs
-- test results
-- other artifacts
-
----
-
-## Raw Output
-
-A collapsed section can expose:
-
-- Codex output
-- stdout
-- stderr
-- command logs
-
-This exists for debugging but is not the primary UX.
-
----
-
-# Chat
-
-Chat is for steering the operator.
-
-It is not a separate generic chatbot.
-
-Examples:
-
-```text
-Focus on VSLMachine conversion until we understand the signup drop.
-```
-
-```text
-Why did you choose this task?
-```
-
-```text
-Stop the current task.
-```
-
-```text
-Add the BarnumPT repository to the current context.
-```
-
-```text
-Don't publish SEO articles without asking me first.
-```
-
-```text
-What did you accomplish today?
-```
-
----
-
-# Chat Behavior
-
-Nabu should classify meaningful user messages into durable effects.
-
-Possible effects:
-
-```text
-conversation_only
-create_task
-update_task
-cancel_task
-update_mission
-update_context
-update_policy
-approve_action
-reject_action
-pause
-resume
-request_report
-```
-
-The response should state what changed.
-
-Example:
-
-```text
-User:
-Stop SEO work for now. Figure out why VSLMachine isn't converting.
-
-Nabu:
-I paused the two ready SEO tasks and changed the current focus to
-VSLMachine conversion. I created an investigation task and moved
-it to the top of the queue.
-```
-
-The task board should immediately reflect the change.
-
----
-
-# Chat Sessions
-
-Use one primary conversation with Nabu.
-
-Do not create dozens of separate chat threads by default.
-
-The user can inspect historic messages chronologically.
-
-Important information is promoted into durable context instead of depending on chat history forever.
-
----
-
-# Chat Rendering
-
-Support:
-
-- streamed text
-- Markdown
-- headings
-- lists
-- code blocks
-- inline code
-- file references
-- task references
-- report references
-- approval cards
-- activity cards
-- diff previews
-- image/screenshot previews
-
-Chat should be powerful without becoming visually busy.
-
----
-
-# Codex Integration
-
-Codex CLI is Nabu's only AI engine.
-
-Nabu must detect and verify Codex during setup.
-
-Nabu must not require the user to enter an API key into Nabu.
-
-The local Codex installation remains responsible for its own authentication.
-
----
-
-# Codex Runner
-
-`nabud` directly owns Codex processes.
-
-No tmux requirement.
-
-For each run, Nabu tracks:
-
-```text
-run_id
-task_id
-PID
-working_directory
-started_at
-ended_at
-status
-exit_code
-Codex session/thread identifier when available
-stdout
-stderr
-structured events
-result
-```
-
-Nabu should prefer Codex machine-readable output when available.
-
----
-
-# Run Types
-
-Nabu needs only three conceptual run types.
-
-## Orient
-
-Purpose:
-
-> Given the mission and current state, decide what useful work should happen next.
-
-An orientation run can:
-
-- review completed work
-- inspect current signals
-- identify blockers
-- create a small number of tasks
-- reprioritize ready tasks
-- decide that no new work is needed
-
-Orientation must not automatically create a massive backlog.
-
-Default maximum new ready tasks from one orientation: **3**.
-
----
-
-## Execute
-
-Purpose:
-
-> Complete one bounded task.
-
-The run receives:
-
-- task
-- mission
-- relevant context
-- approved workspace
+- purpose
+- mission connection
 - definition of done
-- policy
-- relevant skills/scripts
-- required evidence
+- priority: High, Normal, or Low
+- workspace
+- creator
+- dependencies
+- optional planned time
+- runs, evidence, artifacts, and reports
+- timestamps and terminal state
 
-The run should remain focused on that task.
+Task list sections are Doing, Needs You, Ready, and Finished. Finished is ordered most-recent-first, initially shows five, and loads additional items in bounded pages.
 
----
+Task detail must provide:
 
-## Review
+- prominent title and purpose
+- live definition-of-done state when evidence is available
+- human-readable activity
+- structured result and verification
+- files, artifacts, datasets, reports, and app references
+- formatted raw output for debugging
+- Run Now for an eligible task
+- retry or continue-with-Nabu recovery
+- close/cancel, user-complete, and delete actions where valid
 
-Purpose:
+Run Now must explain unmet active prerequisites. A cancelled prerequisite does not silently trap the task forever; the user may explicitly override it when the remaining work is still valid.
 
-> Verify or critique important completed work.
+### 6.4 Calendar
 
-A review may inspect:
+Calendar presents Nabu as a worker with history and future commitments.
 
-- diff
-- files
-- tests
-- screenshots
-- output artifacts
-- task definition of done
+It shows:
 
-Review is used selectively, not for every trivial task.
+- completed work in the past
+- currently running work
+- genuinely time-bound planned tasks
+- recurring and one-time schedules
+- milestones and check-ins
 
----
+The upcoming list shows only actionable future items. Status badges are unnecessary when the section already communicates the state.
 
-# Task Packet
+Nabu normally plans detailed executable work for the next two weeks. Immediate foundation work should not be delayed merely to distribute activity across dates. Future scheduling is for real time dependencies, measurement windows, follow-ups, publishing dates, or recurring checks.
 
-Every Codex execution receives a generated task packet.
+### 6.5 Database
 
-Example:
+Database provides workspace-scoped typed datasets for research and operational records.
 
-```markdown
-# Task
+Nabu should choose a dataset when information is naturally a collection, including:
 
-Prepare a landing page for AI Funnel Design Review.
+- market and competitor research
+- product or resource directories
+- lead and opportunity lists
+- sitemap or page inventories
+- analytics snapshots
+- findings and remediation catalogues
+- experiment results
 
-## Mission
+Requirements:
 
-Grow qualified traffic, product usage, and paid adoption across Wynter.ai.
+- dataset create, update, archive, restore, and delete
+- typed schemas with additive evolution
+- row insert, update, upsert, delete, search, filter, and sort
+- cursor pagination
+- JSON import and JSON/CSV export
+- virtualized, resizable table presentation
+- one-line truncated cells with a detail drawer
+- URLs open safely in a new tab
+- atomic dataset-plus-rows creation
+- automatic bounded chunking for large model-produced writes
+- no completion claim until the intended rows are actually persisted
 
-## Why
+The UI and runner must not surface an implementation-size limit as an unrecoverable user task failure. Nabu should split valid writes into safe batches.
 
-Search data indicates demand for this topic and no targeted page exists.
+### 6.6 Apps
 
-## Workspace
+Apps surfaces runnable local sites and applications that Nabu creates or connects.
 
-~/Code/wynter-ai
+Each app registration includes:
 
-## Definition of Done
+- name
+- workspace-relative directory under `repos/`
+- start command
+- port and health path
+- status
+- optional auto-start setting
+- bounded logs
 
-- Create the page
-- Add metadata
-- Add two internal links
-- Build succeeds
-- Generate desktop screenshot
+The user can start, stop, restart, open, inspect logs, and navigate to the source folder. Nabu may register an app after creating it, but may not register the workspace root as an application directory.
 
-## Policy
+### 6.7 Outputs
 
-Allowed:
-- read/write approved workspace
-- run tests
-- create local branch
-- create local commit
+Outputs provides a human-friendly view of what Nabu made, regardless of whether the user browses the filesystem.
 
-Requires approval:
-- deploy production
-- publish content
-- merge protected branch
+It includes:
 
-## Required Result
+- files and documents
+- media
+- artifacts
+- repository links
+- local applications
 
-Return:
-- concise summary
-- files changed
-- verification performed
-- remaining uncertainty
-- approval needed
-```
+Any valid workspace path shown in Chat, Tasks, Runs, Outputs, or Reports should open in a consistent drawer.
 
----
+The viewer supports:
 
-# Codex Process Rules
+- syntax-highlighted text with editing and save
+- Markdown preview
+- JSON formatting
+- images
+- video and audio
+- PDF
+- download
+- folder listing and navigation when the target is a directory
 
-Each run must have:
+### 6.8 Reports
 
-- explicit working directory
-- explicit task
-- explicit allowed workspace
-- timeout
-- cancellation support
-- maximum retry count
-- captured output
-- final status
+Reports are durable, meaningful results rather than raw model messages.
 
-Nabu must be able to kill a running Codex process.
+Reports support Unread, Read, and Archived states, related tasks, artifacts, deletion, and workspace isolation. Markdown tables must remain responsive and truncate or wrap pathological identifiers without breaking page layout. JSON report bodies should render as structured JSON where possible.
 
----
+Nabu creates a report only when the result is worth returning to.
 
-# Failure Handling
+### 6.9 Settings
 
-If Codex fails:
+Settings groups local operator configuration separately from workspace capabilities.
 
-1. Record the failure.
-2. Decide whether the failure is retryable.
-3. Retry once automatically when appropriate.
-4. If it fails again, mark the task `Failed` or `Needs Attention`.
-5. Surface the issue on Overview.
-6. Do not loop indefinitely.
+General:
 
----
+- Operator: discovered Codex model, reasoning effort, and maximum parallel tasks
+- Workspaces: create, connect, switch, icon, update, and delete
+- Remote access: Tailscale Serve status and guided setup
 
-# Codex Unavailable
+Workspace:
 
-If Codex is unavailable or rate limited:
+- Policy
+- Schedules
+- Scripts
+- Memory
+- Soul
+- Secrets
+- MCP connectors
 
-- Nabu remains running
-- scheduled non-AI scripts continue
-- queue remains intact
-- active AI work becomes waiting
-- UI shows a clear status
-- Nabu retries availability conservatively
-- no task state is lost
+## 7. Planning and execution
 
----
+### 7.1 Task creation
 
-# Task Creation
-
-Tasks can come from:
+Tasks may come from:
 
 - the user
-- chat
-- orientation
+- Chat
+- onboarding or orientation
+- a plan
 - a schedule
 - a script result
-- a completed task
-- a failed task
+- a completed or failed task
+- the idle steward
 
-Every task requires:
+Nabu should prefer a small coherent queue over speculative backlog generation.
 
-```text
-title
-purpose
-status
-priority
-definition_of_done
-created_by
-created_at
-```
+Dependencies are reserved for real prerequisites. Independent tasks should run independently.
 
-Optional:
+### 7.2 Concurrency
 
-```text
-workspace
-schedule
-context
-approval_requirement
-parent_task
-artifacts
-```
+The user configures one to eight parallel AI task workers. Default is one; two is recommended when Codex capacity allows it.
 
----
+Requirements:
 
-# Priorities
+- a global concurrency limit across workspaces
+- atomic claims prevent duplicate execution
+- dependencies must be satisfied before automatic claim
+- Chat uses a separate FIFO lane and has priority over starting new autonomous work
+- orientation is serialized and waits for a safe view of active work
+- Pause and Stop cancel exact active runs without corrupting unrelated tasks
+- status UI lists all active tasks and Chat work
 
-Use only:
+### 7.3 Planning horizon
 
-```text
-High
-Normal
-Low
-```
+Nabu reasons across a two-week rolling horizon.
 
-Do not implement complicated numeric prioritization.
+- Do now: unblocked work that advances the mission
+- Plan soon: work dependent on current tasks or near-term evidence
+- Schedule: work that genuinely depends on a future time or recurrence
+- Milestone: a measurable outcome or review point
 
----
+Nabu must not manufacture idle gaps by scheduling foundational work days into the future when it can safely proceed now.
 
-# Work-In-Progress Limits
+### 7.4 Result contract
 
-Default:
+Every Codex run returns a normalized bounded result containing:
 
-```text
-Running AI tasks: 1
-Ready tasks: 5
-Active task ideas: unlimited but hidden from active queue
-```
+- terminal status
+- concise summary
+- definition-of-done verification
+- evidence
+- changed files and artifacts
+- optional report
+- optional dataset writes
+- optional local app registrations
+- attention reason and remaining work when incomplete
 
-Nabu may execute deterministic scripts concurrently where safe.
+Malformed structured output receives one repair attempt before the run becomes actionable failure. Nabu must never store an empty or unknown terminal status.
 
-The default experience should favor one focused Codex task at a time.
+## 8. Capabilities and integrations
 
----
+### 8.1 Codex
 
-# Reorientation
+Codex CLI is the default and initial AI provider.
 
-Nabu should request orientation when:
+Nabu discovers installed Codex models and supported reasoning levels rather than hard-coding an outdated list. The selected model, reasoning level, approved workspace, relevant memory, task packet, and available capabilities are explicit for every run.
 
-- mission starts
-- queue becomes empty
-- important work completes
-- important work fails
-- user significantly changes direction
-- meaningful new signal appears
-- configured orientation schedule fires
+Provider abstraction may be added later, but Claude Code or another provider is not required for the first public release.
 
-Do not run constant AI heartbeats.
+### 8.2 Browser and public web
 
----
+Browser capability is supplied to Codex through a standard browser MCP server when interactive UI work is required. Nabu does not need to build a proprietary browser.
 
-# Scheduler
+Requirements:
 
-Nabu includes a small durable scheduler.
+- browser MCP availability is discoverable before the run
+- task packets state the available browser capability accurately
+- UI and UX tasks use browser evidence when configured
+- authenticated browser work uses the connector’s supported OAuth or user session
+- the user can complete OAuth in a new tab and Nabu polls the persisted auth state
+- a completed OAuth callback must update Settings without requiring a restart
+- missing browser capability blocks only work that truly requires interactive verification
+- public research may use non-browser web or HTTP tools when sufficient
+- browser screenshots and observations become artifacts
 
-A schedule can trigger:
+Codex must not repeatedly attempt sandbox-blocked local Chromium when a browser MCP is the configured path.
 
-- local script
-- task creation
-- orientation
+### 8.3 Secrets
 
-Examples:
+Secrets are generic workspace capabilities, not provider-specific integrations.
 
-```text
-Run site-health script every hour.
-Create weekly search review task.
-Run analytics snapshot each morning.
-Orient if the queue is empty.
-```
+Secret values:
 
-Schedules survive restart.
+- are entered only through protected UI
+- live in the operating-system credential store
+- are write-only after save
+- never enter Chat, SQLite, prompts, logs, reports, or command arguments
+- may be bound to script environment variables or MCP authentication
 
----
+Metadata such as name, label, description, and bindings may live in SQLite.
 
-# Scripts
+### 8.4 Scripts
 
-Scripts are the preferred way to perform repeatable deterministic work.
+Scripts provide repeatable deterministic capabilities and may use bound secrets as environment variables.
 
-Workspace:
+Nabu can create and edit a script inside the managed scripts directory, register it, test it, and use it manually, on a schedule, or as task context. Script execution remains bounded by workspace, timeout, output, and access policy.
 
-```text
-~/.nabu/workspace/scripts/
-```
+Provider-specific integration manifests are optional convenience adapters. They must not be required when a generic secret plus an approved script or MCP server can accomplish the work.
 
-Examples:
+### 8.5 MCP connectors
 
-```text
-analytics-summary
-search-console-export
-site-health
-sentry-errors
-railway-status
-git-status
-```
+Nabu supports local and remote MCP servers with:
 
-A script should produce structured output where practical.
+- enabled and required state
+- read-only or broader tool access policy
+- local command or remote HTTPS transport
+- secret bindings
+- OAuth authentication where offered by the server
+- auth-status polling
+- tool inventory on new Chat, task, and orientation runs
 
-Example:
+Unknown or write-capable tools fail closed according to policy. Read-only tools may run automatically.
 
-```json
-{
-  "status": "ok",
-  "summary": "Traffic increased 12%.",
-  "data": {},
-  "interesting": true
-}
-```
+## 9. Memory and personality
 
-If `interesting` is true, Nabu may create a task or request orientation.
+### 9.1 MEMORY.md
 
----
+Memory contains concise durable facts and decisions that should influence future work:
 
-# Skills
-
-Skills provide reusable instructions to Codex.
-
-Workspace:
-
-```text
-~/.nabu/workspace/skills/
-```
-
-Example:
-
-```text
-skills/
-└── search-opportunity/
-    ├── SKILL.md
-    ├── references/
-    └── scripts/
-```
-
-Nabu can make approved skills available to Codex in the workspace.
-
-Skills remain simple filesystem assets.
-
-No marketplace or plugin system is required.
-
----
-
-# Memory
-
-Memory is intentionally simple.
-
-## MEMORY.md
-
-Curated durable information.
-
-Examples:
-
-- product positioning
-- important decisions
-- recurring constraints
-- business terminology
+- business and product context
+- terminology
 - stable preferences
-- lessons that should affect future work
+- constraints
+- lessons
+- important tool and account metadata that is not secret
 
----
+Memory changes from Chat are proposed or applied through typed effects. The default Settings view is Preview, with an explicit Edit mode.
 
-## Daily Memory
+### 9.2 Daily memory
 
-```text
-memory/YYYY-MM-DD.md
-```
+Operational notes live in `memory/YYYY-MM-DD.md` and remain concise.
 
-Contains concise operational notes.
+### 9.3 SOUL.md
 
----
+Soul defines Nabu’s evolving character, working style, values, and self-reflection without overriding policy or inventing authority.
 
-## SQLite
+Soul may improve gradually from observed collaboration preferences. It cannot weaken security, approvals, workspace boundaries, or evidence requirements.
 
-Structured operational truth lives in SQLite.
+## 10. Policy and approvals
 
-Do not use Markdown as the authoritative source for:
-
-- task status
-- run status
-- approvals
-- schedules
-- reports
-- events
-
----
-
-# Context Files
-
-Default:
-
-```text
-NABU.md
-MISSION.md
-BUSINESS.md
-USER.md
-POLICY.md
-MEMORY.md
-```
-
-## NABU.md
-
-Defines Nabu's operating character.
-
-Suggested core:
-
-```markdown
-# Nabu
-
-You are Nabu, an autonomous operator responsible for advancing
-the active mission.
-
-Be useful, focused, evidence-driven, and conservative with
-irreversible actions.
-
-Prefer completing a small number of high-value tasks over
-creating a large backlog.
-
-Do not claim work succeeded without checking it.
-
-Ask the owner only when policy requires approval or important
-direction cannot be derived from existing context.
-
-Communicate as one operator. Internal Codex runs are implementation
-details.
-```
-
----
-
-# Policy
-
-Policy must remain understandable in one screen.
-
-Store policy in structured data and render a readable version into task context.
-
-Core action categories:
+Action categories:
 
 ```text
 Read
@@ -1377,879 +623,299 @@ Publish
 Dangerous
 ```
 
-## Read
-
-Default: allow.
-
-Includes:
-
-- read files
-- inspect websites
-- inspect repositories
-- read metrics
-- web research
-
----
-
-## Work
-
-Default: allow in approved workspaces.
-
-Includes:
-
-- edit files
-- run tests
-- run scripts
-- create branches
-- create commits
-- generate drafts
-- generate reports
-
----
-
-## Publish
-
-Default: ask.
-
-Includes:
-
-- merge
-- deploy production
-- publish public content
-- send external communication
-- modify production configuration
-
----
-
-## Dangerous
-
-Always ask.
-
-Includes:
-
-- delete production data
-- modify authentication
-- modify billing
-- spend money
-- change security credentials
-- destructive infrastructure actions
-
----
-
-# Approvals
-
-Approvals should be simple.
-
-Approval states:
-
-```text
-Pending
-Approved
-Rejected
-Expired
-```
-
-Approval card contains:
-
-- proposed action
-- why
-- related task
-- what will change
-- evidence/preview
-- Approve
-- Reject
-
-Optional rejection comment.
-
-Example:
-
-```text
-Publish landing page
-
-Nabu completed the page and verification passed.
-
-Changes:
-- 1 new page
-- 2 internal links
-- sitemap updated
-
-[Review Changes]
-
-[Reject] [Approve]
-```
-
-Once approved, Nabu resumes the paused task.
-
----
-
-# Reports
-
-Reports are durable outputs, not chat messages.
-
-Types can remain unstructured initially.
-
-Examples:
-
-- daily mission report
-- research report
-- SEO report
-- investigation
-- conversion review
-- deployment review
-
-Each report has:
-
-```text
-title
-summary
-created_at
-related_tasks
-body
-artifacts
-```
-
----
-
-# Daily Mission Report
-
-Nabu should be able to produce a concise report containing:
-
-```text
-What changed
-What was completed
-What failed
-What was learned
-What needs the user
-What Nabu is doing next
-```
-
-Do not force a report if nothing meaningful happened.
-
----
-
-# Local API
-
-`nabud` exposes a localhost API used by the React UI.
-
-Initial API groups:
-
-```text
-/api/status
-/api/mission
-/api/tasks
-/api/runs
-/api/reports
-/api/chat
-/api/approvals
-/api/settings
-/api/events
-```
-
-Use JSON.
-
-Use Server-Sent Events for live updates.
-
-WebSocket is unnecessary unless a feature genuinely requires bidirectional persistent transport.
-
----
-
-# Live Events
-
-Example event types:
-
-```text
-status.changed
-task.created
-task.updated
-task.started
-task.completed
-task.failed
-run.output
-run.completed
-approval.created
-approval.resolved
-report.created
-chat.message
-```
-
-The React app subscribes and updates without refreshing.
-
----
-
-# Persistence
-
-Use SQLite.
-
-Suggested tables:
-
-```text
-settings
-missions
-tasks
-runs
-events
-approvals
-reports
-messages
-schedules
-artifacts
-```
-
-Use migrations from the beginning.
-
----
-
-# File Storage
-
-Large or human-readable artifacts live on disk.
-
-Example:
-
-```text
-~/.nabu/
-├── workspace/
-├── artifacts/
-├── reports/
-├── runs/
-└── logs/
-```
-
-SQLite stores metadata and paths.
-
----
-
-# Repository Handling
-
-The user explicitly adds repositories.
-
-Nabu records:
-
-```text
-name
-path
-default_branch
-allowed
-```
-
-For coding tasks:
-
-- work inside the repository
-- prefer task-specific Git branches
-- do not modify unrelated repositories
-- capture Git diff
-- leave repository in a recoverable state
-
-Git worktrees are optional, not required for the first implementation.
-
-One running Codex task at a time greatly reduces the need for worktree orchestration.
-
----
-
-# Browser and Web Work
-
-Nabu should support browser-oriented work through local scripts and Codex-compatible tooling.
-
-Prefer:
-
-1. HTTP/API/scripts
-2. structured page fetching
-3. Playwright for browser interaction
-4. manual user takeover when authentication/CAPTCHA blocks automation
-
-Browser functionality should be exposed through task activity and artifacts, not as a separate primary product area.
-
-If a browser run produces screenshots, show them in the task detail and chat.
-
----
-
-# Pause and Resume
-
-Global **Pause** must be prominent.
-
-Pause means:
-
-- do not start new Codex work
-- do not begin publish actions
-- allow current safe task to be cancelled or finish based on user choice
-- retain queue
-- retain schedules
-- continue basic daemon health
-
-Resume continues from durable state.
-
----
-
-# Status
-
-Global Nabu states:
-
-```text
-Working
-Idle
-Waiting for Approval
-Paused
-Needs Attention
-```
-
-Only one global state is displayed.
-
-Detailed process states remain inside task views.
-
----
-
-# Service Operation
-
-## macOS
-
-Install `nabud` as a user LaunchAgent.
-
-## Linux
-
-Install `nabud` as a user systemd service.
+Default behavior:
+
+- Read: allow
+- Work inside approved workspace: allow
+- Publish: ask
+- Dangerous: always ask
+
+Approvals are durable, scoped to an exact action, and have Pending, Approved, Rejected, or Expired state. Approving an action must revalidate the exact target before execution. Model text cannot bypass daemon enforcement.
+
+## 11. Persistence and recovery
+
+SQLite is authoritative for structured operational state.
+
+Core records include:
+
+- settings and workspace scopes
+- missions and policy
+- tasks and dependencies
+- runs and events
+- messages and threads
+- approvals
+- reports and artifacts
+- schedules, scripts, and script runs
+- memory proposals
+- secrets metadata
+- MCP connectors
+- datasets and rows
+- local app registrations
+
+Large human-readable files and run streams live on disk, with metadata in SQLite.
 
 Requirements:
 
-- start automatically
-- restart on crash
-- retain SQLite state
-- retain logs
-- serve web UI after restart
-- recover interrupted task state
+- additive versioned migrations
+- foreign-key integrity
+- transactional multi-record operations
+- restart recovery for running tasks, Chat, scripts, and schedule claims
+- daily verified backups
+- safe restore procedure
+- log rotation
+- disk-space health checks
+- bounded output capture
+- no infinite retry loops
+- user data preserved during ordinary uninstall
 
----
+## 12. Service, API, and remote access
 
-# CLI
+`nabud` runs as a user LaunchAgent on macOS or user systemd service on Linux.
 
-The CLI exists only for setup and emergency control.
+Default binding:
 
-Required commands:
-
-```bash
-nabu setup
-nabu open
-nabu status
-nabu start
-nabu stop
-nabu restart
-nabu logs
-nabu doctor
-nabu uninstall
+```text
+127.0.0.1:7777
 ```
 
-Normal daily use happens in the web UI.
+The React frontend is embedded in the Go binary for production.
 
----
+The local API includes groups for:
 
-# `nabu doctor`
+- status, setup, mission, pause, and health
+- scopes and workspace icons
+- Chat, threads, and events
+- tasks, runs, and recovery
+- calendar and schedules
+- datasets and rows
+- apps and logs
+- outputs and files
+- reports, approvals, and policy
+- scripts, memory, and Soul
+- secrets and MCP connectors
+- remote access and service control
 
-Check:
+Server-Sent Events update the UI without requiring a refresh. Events must be workspace-scoped and idempotent at consumers.
 
-- daemon
-- SQLite
-- frontend assets
-- Codex CLI
-- Codex authentication availability
+Tailscale Serve is the supported remote-access path. Nabu provides UI-guided setup, status, HTTPS URL, teardown, and actionable certificate or routing errors. Nabu does not bind directly to a public network interface by default.
+
+## 13. Security requirements
+
+- bind to localhost by default
+- validate Host and Origin for local and Tailscale requests
+- treat workspace selection as an authorization boundary
+- use exact approved working directories
+- keep Codex in an explicit workspace-write sandbox
+- never silently broaden filesystem scope
+- keep credentials out of model-visible and persisted text
+- prevent unbounded redirects, private-network SSRF, and proxy inheritance for generated HTTP adapters
+- bound request, response, log, artifact, and dataset sizes
+- validate all model-produced effects against authoritative state
+- require exact-target approval for destructive operations
+- preserve evidence of failures without preserving secret payloads
+- support a documented responsible-disclosure process before public beta
+
+## 14. Design requirements
+
+Nabu uses a professional neutral dark interface:
+
+- near-black graphite base, not green-tinted surfaces
+- supplied owl background with a restrained dark overlay
+- teal/green only as the brand accent
+- amber for setup, approval, and attention
+- red only for destructive actions and true failures
+- glassy surfaces used sparingly
+- subtle borders and depth rather than heavy glow
+- consistent button heights and three button levels: primary, secondary, ghost
+- strong hover, active, focus-visible, disabled, and loading states
+- responsive behavior at 360, 768, and 1280 pixel widths
+- no horizontal page overflow
+- accessible labels, keyboard interaction, and reduced-motion support
+- native scroll behavior with visible scrollbars on actual scroll owners
+
+Brand assets:
+
+- full Nabu wordmark in the header
+- cropped owl for favicon, status, and assistant avatar
+- status mascot variants for Idle, Active, Awaiting Approval, Asking, Failed, and Success
+- startup introduction may show Nabu, version, and “Made by Wynter.ai,” but must be brief and skippable after first view
+
+## 15. Installation and distribution
+
+Development requirements:
+
+- Go 1.24+
+- Node.js 22+
+- authenticated Codex CLI
 - Git
-- workspace permissions
-- approved repository paths
-- disk space
-- local port
-- service installation
 
-Output should be concise and actionable.
+Public releases must not require end users to build from source.
 
----
+Release distribution requires:
 
-# Security
+- versioned macOS and Linux binaries
+- embedded frontend assets
+- SHA-256 checksums
+- signed release artifacts where practical
+- a Homebrew installation path
+- upgrade, rollback, and uninstall commands
+- migration and backup verification before upgrade
+- a diagnostic `nabu doctor`
 
-Default server binding:
+The source installer remains a development fallback.
+
+## 16. Open-source requirements
+
+Canonical repository:
 
 ```text
-127.0.0.1
+https://github.com/WynterJones/nabu.sh
 ```
 
-Do not expose Nabu publicly.
-
-Secrets must not be written into:
-
-- prompts
-- chat history
-- task descriptions
-- reports
-- logs
-
-Scripts should own service credentials where possible and return only required data.
-
-Approved workspaces must be explicit.
-
-Nabu must never silently broaden filesystem scope.
-
----
-
-# Logging
-
-Keep two levels.
-
-## Product Activity
-
-Human-readable events shown in UI.
-
-## Debug Logs
-
-Technical daemon/process logs stored on disk.
-
-Do not fill the normal UI with raw infrastructure logs.
-
----
-
-# Result Model
-
-A completed Codex run should return a normalized result.
-
-```json
-{
-  "status": "completed",
-  "summary": "Created and verified the landing page.",
-  "files_changed": [],
-  "verification": [],
-  "artifacts": [],
-  "uncertainties": [],
-  "approval_needed": null
-}
-```
-
-Nabu stores the normalized result even if raw Codex output is also preserved.
-
----
-
-# Phase 1 — Local Shell
-
-## Goal
-
-Install Nabu, run the Go daemon, open the embedded dark React interface, and persist basic state.
-
-## Tasks
-
-- [ ] Create Go project
-- [ ] Create `nabu` CLI
-- [ ] Create `nabud` daemon
-- [ ] Add config directory at `~/.nabu`
-- [ ] Add SQLite
-- [ ] Add migrations
-- [ ] Create React + TypeScript frontend
-- [ ] Add Vite
-- [ ] Add Tailwind CSS
-- [ ] Add shadcn/ui
-- [ ] Implement dark-mode design tokens
-- [ ] Build frontend into static assets
-- [ ] Embed frontend assets into Go binary
-- [ ] Add local HTTP server
-- [ ] Bind to `127.0.0.1`
-- [ ] Add `/api/status`
-- [ ] Add initial Overview shell
-- [ ] Add sidebar navigation
-- [ ] Add global status
-- [ ] Add Pause button shell
-- [ ] Add `nabu open`
-- [ ] Add `nabu status`
-- [ ] Add macOS LaunchAgent installation
-- [ ] Add Linux systemd user service installation
-- [ ] Recover cleanly after daemon restart
-
-## Result
-
-Running Nabu opens a polished local dark web application and the daemon survives after the browser closes.
-
----
-
-# Phase 2 — Setup and Mission
-
-## Goal
-
-A user can install Nabu, connect the local Codex CLI, define the mission, and select approved workspaces.
-
-## Tasks
-
-- [ ] Build first-run setup flow
-- [ ] Detect Codex binary
-- [ ] Verify Codex can execute
-- [ ] Detect Git
-- [ ] Create workspace structure
-- [ ] Create `NABU.md`
-- [ ] Create `MISSION.md`
-- [ ] Create `BUSINESS.md`
-- [ ] Create `USER.md`
-- [ ] Create `POLICY.md`
-- [ ] Create `MEMORY.md`
-- [ ] Build mission editor
-- [ ] Build context editor
-- [ ] Build repository/folder picker
-- [ ] Store approved workspace paths
-- [ ] Build simple autonomy setup
-- [ ] Show setup summary
-- [ ] Add Start Mission action
-- [ ] Render active mission on Overview
-
-## Result
-
-A new install can reach a working mission without manually editing configuration files.
-
----
-
-# Phase 3 — Codex Runner
-
-## Goal
-
-Nabu can safely launch, observe, cancel, and record Codex runs without tmux.
-
-## Tasks
-
-- [ ] Implement Go child-process supervisor
-- [ ] Start Codex with explicit working directory
-- [ ] Capture stdout
-- [ ] Capture stderr
-- [ ] Capture structured output where available
-- [ ] Record PID
-- [ ] Record start/end timestamps
-- [ ] Record exit code
-- [ ] Add cancellation
-- [ ] Add timeout
-- [ ] Add one automatic retry
-- [ ] Persist runs
-- [ ] Restore interrupted run state after restart
-- [ ] Normalize run result
-- [ ] Stream run events through SSE
-- [ ] Display active run on Overview
-- [ ] Build raw output view
-- [ ] Build human-readable activity view
-
-## Result
-
-Nabu can reliably treat Codex as a supervised local worker.
-
----
-
-# Phase 4 — Task Queue
-
-## Goal
-
-Nabu can create, prioritize, run, complete, fail, and cancel durable tasks.
-
-## Tasks
-
-- [ ] Create task database model
-- [ ] Implement task states
-- [ ] Implement High/Normal/Low priority
-- [ ] Add definition of done
-- [ ] Add task purpose
-- [ ] Add workspace association
-- [ ] Add task creation UI
-- [ ] Add task list
-- [ ] Add task detail
-- [ ] Add Ready queue
-- [ ] Add one-task AI concurrency limit
-- [ ] Dispatch Ready task to Codex
-- [ ] Generate task packet
-- [ ] Store run/task relationship
-- [ ] Handle successful completion
-- [ ] Handle failure
-- [ ] Handle cancellation
-- [ ] Capture artifacts
-- [ ] Capture Git diff when applicable
-- [ ] Show output and verification
-- [ ] Update Overview queue automatically
-
-## Result
-
-Nabu can continuously work through a small durable queue.
-
----
-
-# Phase 5 — Orientation Loop
-
-## Goal
-
-Nabu can reason about the mission and create useful next tasks without constant AI heartbeats.
-
-## Tasks
-
-- [ ] Implement Orient run type
-- [ ] Build orientation prompt/context packet
-- [ ] Include mission
-- [ ] Include business context
-- [ ] Include recent completed work
-- [ ] Include failures
-- [ ] Include current queue
-- [ ] Include recent meaningful events
-- [ ] Require structured orientation output
-- [ ] Limit new Ready tasks to 3 per orientation
-- [ ] Deduplicate proposed tasks
-- [ ] Allow orientation to reprioritize
-- [ ] Allow orientation to decide no work is needed
-- [ ] Trigger orientation when queue is empty
-- [ ] Trigger orientation after meaningful completion
-- [ ] Trigger orientation after significant user steering
-- [ ] Prevent orientation loops
-- [ ] Display why a task was created
-
-## Result
-
-Nabu can keep the mission moving without the user manually feeding it every task.
-
----
-
-# Phase 6 — Chat
-
-## Goal
-
-The user can steer Nabu through a polished chat experience while durable state remains authoritative.
-
-## Tasks
-
-- [ ] Create Chat page
-- [ ] Create persistent conversation
-- [ ] Store messages in SQLite
-- [ ] Stream Codex responses
-- [ ] Render Markdown
-- [ ] Render code blocks
-- [ ] Add copy controls
-- [ ] Add scroll behavior
-- [ ] Add loading/working states
-- [ ] Add compact global composer on Overview
-- [ ] Add task reference cards
-- [ ] Add report reference cards
-- [ ] Add approval cards
-- [ ] Add screenshot/image rendering
-- [ ] Adapt useful UX patterns/components from Vercel Chatbot
-- [ ] Remove model selector concepts
-- [ ] Remove provider concepts
-- [ ] Remove hosted auth concepts
-- [ ] Classify chat effects
-- [ ] Allow chat to create tasks
-- [ ] Allow chat to reprioritize tasks
-- [ ] Allow chat to cancel tasks
-- [ ] Allow chat to update mission
-- [ ] Allow chat to update durable context
-- [ ] Allow chat to update policy
-- [ ] Allow chat to pause/resume
-- [ ] Confirm state-changing effects in Nabu's response
-- [ ] Refresh corresponding UI immediately
-
-## Result
-
-Chat feels powerful, but it steers a real operator rather than acting as a disconnected chatbot.
-
----
-
-# Phase 7 — Policy and Approvals
-
-## Goal
-
-Nabu can work independently while important external actions remain understandable and controlled.
-
-## Tasks
-
-- [ ] Implement Read/Work/Publish/Dangerous categories
-- [ ] Build policy settings screen
-- [ ] Set sensible defaults
-- [ ] Include current policy in task packets
-- [ ] Implement approval records
-- [ ] Implement Pending/Approved/Rejected/Expired
-- [ ] Pause task at approval boundary
-- [ ] Build Overview approval card
-- [ ] Build approval detail
-- [ ] Show proposed change
-- [ ] Show related evidence
-- [ ] Add Approve
-- [ ] Add Reject
-- [ ] Add optional rejection note
-- [ ] Resume task after approval
-- [ ] Store approval history
-- [ ] Prevent Codex text from bypassing daemon policy
-
-## Result
-
-The user can leave Nabu running without surrendering control of high-impact actions.
-
----
-
-# Phase 8 — Reports and Memory
-
-## Goal
-
-Nabu remembers important operational context and produces useful durable summaries.
-
-## Tasks
-
-- [ ] Create reports model
-- [ ] Create Reports page
-- [ ] Allow Codex tasks to produce reports
-- [ ] Link reports to tasks
-- [ ] Link artifacts to reports
-- [ ] Build concise report viewer
-- [ ] Add daily mission report capability
-- [ ] Create daily memory file support
-- [ ] Create durable `MEMORY.md`
-- [ ] Add memory/context update action
-- [ ] Let Codex propose memory changes
-- [ ] Require Nabu to store operational state in SQLite
-- [ ] Keep memory concise
-- [ ] Include relevant memory in orientation
-- [ ] Include relevant memory in task packets
-- [ ] Show latest meaningful results on Overview
-
-## Result
-
-Nabu can restart, reorient, and continue operating with useful continuity.
-
----
-
-# Phase 9 — Scheduler and Scripts
-
-## Goal
-
-Repeatable checks run without unnecessarily invoking Codex.
-
-## Tasks
-
-- [ ] Create schedule model
-- [ ] Persist schedules
-- [ ] Run schedules after restart
-- [ ] Support script trigger
-- [ ] Support task trigger
-- [ ] Support orientation trigger
-- [ ] Add script registry
-- [ ] Support structured script output
-- [ ] Capture script logs
-- [ ] Capture script artifacts
-- [ ] Let interesting script results create tasks
-- [ ] Add simple schedule settings UI
-- [ ] Add site-health example
-- [ ] Add analytics-summary example
-- [ ] Add Search Console example
-- [ ] Ensure idle Nabu consumes no AI calls
-
-## Result
-
-Nabu can monitor a mission continuously while reserving Codex for actual reasoning and work.
-
----
-
-# Phase 10 — Operational Reliability
-
-## Goal
-
-Nabu can be trusted as a 24/7 local service.
-
-## Tasks
-
-- [ ] Implement global pause/resume
-- [ ] Implement clean shutdown
-- [ ] Recover interrupted tasks
-- [ ] Handle Codex unavailable state
-- [ ] Handle rate-limit state
-- [ ] Prevent infinite retries
-- [ ] Add task/run timeouts
-- [ ] Add daemon crash recovery
-- [ ] Add database backup
-- [ ] Add log rotation
-- [ ] Add disk-space check
-- [ ] Add `nabu doctor`
-- [ ] Add actionable error messages
-- [ ] Add UI Needs Attention state
-- [ ] Add service restart controls
-- [ ] Add safe uninstall
-- [ ] Preserve user workspace on uninstall unless explicitly requested
-- [ ] Test computer restart recovery
-- [ ] Test browser closure
-- [ ] Test Codex crash
-- [ ] Test failed task
-- [ ] Test rejected approval
-- [ ] Test paused mission
-- [ ] Test empty queue orientation
-
-## Result
-
-Nabu can remain installed and running continuously with predictable recovery behavior.
-
----
-
-# Definition of Product Complete
-
-Nabu is complete when the following experience works end to end:
-
-1. User installs Nabu.
-2. Nabu detects authenticated Codex CLI.
-3. Browser opens the local dark UI.
-4. User enters a mission.
-5. User provides basic business context.
-6. User approves one or more workspaces.
-7. User accepts simple autonomy defaults.
-8. User starts the mission.
-9. Nabu performs orientation.
-10. Nabu creates a small task queue.
-11. Nabu executes the highest-priority task with Codex.
-12. UI shows what Nabu is doing.
-13. Task activity streams into the UI.
-14. Nabu verifies and records the result.
-15. Nabu creates a report when meaningful.
-16. Nabu asks when an action crosses an approval boundary.
-17. User approves or rejects from the web UI.
-18. Nabu continues the task appropriately.
-19. Nabu reorients when useful.
-20. User can steer priorities through chat.
-21. Chat changes the actual queue/mission/policy.
-22. Browser can be closed without stopping Nabu.
-23. Computer can restart without losing mission state.
-24. Nabu can remain idle without consuming Codex usage.
-25. Nabu resumes useful work when work becomes available.
-
----
-
-# Final Product Shape
+Before declaring Nabu open source, the repository requires:
+
+- [ ] an OSI-approved code license; Apache-2.0 is recommended
+- [ ] explicit terms for Nabu trademarks and supplied brand artwork
+- [ ] `CONTRIBUTING.md`
+- [ ] `SECURITY.md`
+- [ ] `CODE_OF_CONDUCT.md`
+- [ ] `CHANGELOG.md`
+- [ ] issue and pull-request templates
+- [ ] GitHub Actions for Go race tests, vet, frontend tests, lint, typecheck, build, and dependency audit
+- [ ] dependency update automation
+- [ ] release artifact generation and checksums
+- [ ] architecture and threat-model documentation
+- [ ] installation, upgrade, backup, restore, and troubleshooting documentation
+
+Public source without a license is not yet an open-source release.
+
+## 17. Self-development requirements
+
+Nabu may work on its own source when the repository is an approved workspace repository, for example `repos/nabu/`.
+
+Safe self-development separates:
+
+1. the stable installed Nabu coordinating the work
+2. a candidate source checkout and isolated candidate runtime
+
+For a self-improvement task Nabu should:
+
+1. create a task branch
+2. inspect and modify the candidate source
+3. run complete backend and frontend verification
+4. build a candidate binary and embedded frontend
+5. launch it on a different port with an isolated Nabu home
+6. exercise relevant API and browser acceptance tests
+7. produce a change and risk report
+8. request approval before merge, release, migration of real data, or stable-service replacement
+
+The running process must never overwrite itself. Promotion requires an external updater or supervisor with atomic replacement, health check, and rollback.
+
+## 18. Delivery status
+
+The original ten implementation phases have been delivered into the alpha codebase. “Implemented” does not mean “public-release verified.”
+
+| Phase | Capability | Status |
+| --- | --- | --- |
+| 1 | Go daemon, CLI, embedded React shell, SQLite | Implemented |
+| 2 | Setup, missions, organized workspace scopes | Implemented |
+| 3 | Supervised Codex runner and streamed activity | Implemented |
+| 4 | Durable task queue, evidence, recovery | Implemented |
+| 5 | Orientation and proactive queue management | Implemented |
+| 6 | Durable Chat, queue, Markdown, threads, effects | Implemented |
+| 7 | Policy, approvals, exact-target enforcement | Implemented |
+| 8 | Reports, memory, Soul, artifacts | Implemented |
+| 9 | Schedules, scripts, secrets, automation | Implemented |
+| 10 | Pause, recovery, backups, health, rate limits | Implemented |
+| 11 | Datasets, Apps, Outputs, MCP, parallel tasks | Implemented; hardening |
+| 12 | Open-source release engineering | In progress |
+| 13 | Safe self-development and candidate promotion | Planned |
+
+## 19. Public alpha exit criteria
+
+Nabu is ready for `v0.1.0-alpha` when all of the following pass from a clean supported machine:
+
+- [ ] repository has a code license and community/security files
+- [ ] CI passes from a fresh clone
+- [ ] a release binary installs without Go or Node
+- [ ] Codex detection and authentication checks are actionable
+- [ ] a workspace can be created, onboarded, switched, and removed safely
+- [ ] Chat can gather context and confirm readiness
+- [ ] a task can be created, run, verified, recovered, and deleted
+- [ ] two independent tasks can run in parallel when configured
+- [ ] dependencies prevent invalid automatic ordering
+- [ ] Chat remains responsive while tasks run
+- [ ] browser MCP authentication persists and tools appear in a new run
+- [ ] secrets can be bound to a script or MCP server without entering model-visible state
+- [ ] a large dataset write is automatically batched and fully persisted
+- [ ] a created app appears in Apps and can start, open, stop, and show logs
+- [ ] output files and folders open correctly in the shared viewer
+- [ ] reports support unread, read, archive, restore, and delete
+- [ ] daemon restart recovers interrupted durable state
+- [ ] computer restart preserves workspace state and resumes correctly
+- [ ] backup, migration, restore, upgrade, rollback, and uninstall are tested
+- [ ] 72-hour unattended soak test has no duplicate execution, runaway retries, state corruption, or secret leakage
+- [ ] macOS and Linux installation paths are documented
+
+## 20. Product-complete experience
+
+Nabu is product-complete when a user can:
+
+1. install a signed release
+2. authenticate an existing Codex CLI
+3. create or connect multiple isolated workspaces
+4. complete context setup conversationally
+5. give each workspace a durable mission
+6. connect generic secrets, scripts, and MCP tools as needed
+7. discuss and approve a coherent two-week plan
+8. let Nabu execute independent work in parallel
+9. see exactly what is running and why
+10. receive useful Chat updates without polling task pages
+11. inspect evidence, files, apps, datasets, and reports without opening the workspace folder
+12. resolve genuine blockers through contextual cards and approvals
+13. close the browser without stopping work
+14. restart the computer without losing state
+15. remain idle without wasting AI usage
+16. recover from Codex unavailability and rate limits
+17. upgrade or roll back without losing workspaces or secrets
+18. understand the security model and report vulnerabilities
+19. contribute to the project through a documented open-source workflow
+20. optionally let a stable Nabu prepare and verify improvements to a separate Nabu candidate checkout
+
+## 21. Explicit non-goals for the first public release
+
+- hosted multi-tenant Nabu cloud
+- mandatory Nabu account or hosted authentication
+- native mobile application
+- a fictional multi-agent company UI
+- unrestricted autonomous publishing, spending, or production mutation
+- storing secrets in Nabu’s database
+- building a proprietary browser instead of using standard MCP capability
+- supporting every AI provider before the Codex path is reliable
+- replacing GitHub, an IDE, or full database administration tools
+
+## 22. Final product shape
 
 ```text
-                         NABU
+                              NABU
 
-                  One AI on a Mission
+                    One operator, on a mission
 
-                           │
-                           ▼
+                               │
+                               ▼
 
-                  Dark React Web UI
+                     Local React web interface
 
-        Overview · Tasks · Reports · Chat · Settings
+      Chat · Tasks · Calendar · Database · Apps · Outputs · Reports
 
-                           │
-                           ▼
+                               │
+                  ┌────────────┴────────────┐
+                  ▼                         ▼
+          Durable local state       Approved capabilities
+        SQLite · files · Git      Codex · MCP · scripts · secrets
 
-                         nabud
-                      Go daemon
+                  └────────────┬────────────┘
+                               ▼
 
-         Mission · Queue · Policy · Scheduler · Memory
-            Runs · Reports · Approvals · SQLite
-
-                           │
-                           ▼
-
-                       Codex CLI
-
-                           │
-                           ▼
-
-           Repositories · Scripts · Browser · Git
+               Verified work inside isolated workspaces
 ```
-
-Nabu should remain intentionally small.
-
-The product is not an AI development framework.
-
-It is not a multi-agent platform.
-
-It is not a hosted chatbot.
-
-It is not a terminal multiplexer.
-
-It is a persistent local operator:
-
-> **Give Nabu a mission. It keeps the work moving.**
