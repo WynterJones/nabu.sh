@@ -31,11 +31,26 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      # Fail before publishing rather than shipping a broken release.
-      - name: Verify
+      - name: Vet
+        run: go vet ./...
+
+      # The full suite already ran against this exact commit when it landed on
+      # main, so re-running it here only adds a second chance to hit a flaky
+      # test and block a release that is otherwise fine. Requiring the recorded
+      # CI result instead is a stronger gate: it cannot be defeated by a retry,
+      # and it refuses a tag placed on a commit that was never checked.
+      - name: Require a green CI run for this commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          go vet ./...
-          go test ./...
+          conclusion=$(gh api \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&status=completed" \
+            --jq '[.workflow_runs[].conclusion] | first // "none"')
+          echo "CI for $GITHUB_SHA: $conclusion"
+          if [ "$conclusion" != "success" ]; then
+            echo "::error::Refusing to publish. CI has not passed for this commit."
+            exit 1
+          fi
 
       - uses: goreleaser/goreleaser-action@v6
         with:
