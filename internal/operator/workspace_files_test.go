@@ -133,3 +133,38 @@ func TestWorkspaceFileListsDirectoriesFoldersFirstWithoutFollowingSymlinks(t *te
 		t.Fatalf("second entry = %#v", value.Entries[1])
 	}
 }
+
+// TestWorkspaceFileTypesDoNotDependOnTheHost locks the media types that the
+// operating system's database would otherwise decide. Ubuntu reports
+// text/vnd.trolltech.linguist for .ts and some systems report video/mp2t,
+// which would both describe a TypeScript file wrongly and, in the second
+// case, make it uneditable.
+func TestWorkspaceFileTypesDoNotDependOnTheHost(t *testing.T) {
+	service, _, _, workspace := testOperator(t, fakeExecutor{})
+	for _, expectation := range []struct {
+		name     string
+		mimeType string
+	}{
+		{"module.ts", "text/plain"},
+		{"component.tsx", "text/plain"},
+		{"main.go", "text/plain"},
+		{"notes.md", "text/markdown"},
+		{"config.json", "application/json"},
+		{"styles.css", "text/css"},
+	} {
+		path := filepath.Join(workspace.Path, expectation.name)
+		if err := os.WriteFile(path, []byte("content\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		file, err := service.WorkspaceFile(context.Background(), path, false)
+		if err != nil {
+			t.Fatalf("%s: %v", expectation.name, err)
+		}
+		if file.MIMEType != expectation.mimeType {
+			t.Errorf("%s MIME type = %q, want %q", expectation.name, file.MIMEType, expectation.mimeType)
+		}
+		if file.Kind != "text" || !file.Editable {
+			t.Errorf("%s = kind %q editable %t, want an editable text file", expectation.name, file.Kind, file.Editable)
+		}
+	}
+}

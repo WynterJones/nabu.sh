@@ -52,7 +52,10 @@ func (o *Operator) WorkspaceFile(ctx context.Context, requestedPath string, incl
 		return api.WorkspaceFile{}, readErr
 	}
 	probe = probe[:count]
-	mimeType := mime.TypeByExtension(strings.ToLower(filepath.Ext(resolved)))
+	mimeType, known := workspaceTextTypes[strings.ToLower(filepath.Ext(resolved))]
+	if !known {
+		mimeType = mime.TypeByExtension(strings.ToLower(filepath.Ext(resolved)))
+	}
 	if mimeType == "" {
 		mimeType = http.DetectContentType(probe)
 	}
@@ -205,15 +208,48 @@ func (o *Operator) resolveWorkspaceFile(ctx context.Context, requestedPath strin
 	return resolved, relative, nil
 }
 
+// workspaceTextTypes fixes the media type reported for the file kinds a
+// workspace actually contains, instead of asking the operating system.
+//
+// mime.TypeByExtension reads the machine's own database, which disagrees
+// across systems: Ubuntu maps .ts to text/vnd.trolltech.linguist and other
+// systems map it to video/mp2t, so the same TypeScript file was described
+// differently depending on where the daemon happened to run, and was served
+// with a Content-Type that makes a browser download it rather than show it.
+var workspaceTextTypes = map[string]string{
+	".css":         "text/css",
+	".csv":         "text/csv",
+	".env.example": "text/plain",
+	".gitignore":   "text/plain",
+	".go":          "text/plain",
+	".html":        "text/html",
+	".java":        "text/plain",
+	".js":          "text/javascript",
+	".json":        "application/json",
+	".jsonl":       "application/json",
+	".jsx":         "text/javascript",
+	".md":          "text/markdown",
+	".mdx":         "text/markdown",
+	".py":          "text/plain",
+	".rb":          "text/plain",
+	".rs":          "text/plain",
+	".sh":          "text/plain",
+	".sql":         "text/plain",
+	".toml":        "text/plain",
+	".ts":          "text/plain",
+	".tsv":         "text/tab-separated-values",
+	".tsx":         "text/plain",
+	".txt":         "text/plain",
+	".xml":         "text/xml",
+	".yaml":        "text/plain",
+	".yml":         "text/plain",
+	".zsh":         "text/plain",
+}
+
 func classifyWorkspaceFile(path, mimeType string, probe []byte, size int64) (string, bool) {
 	extension := strings.ToLower(filepath.Ext(path))
-	knownText := map[string]bool{
-		".md": true, ".mdx": true, ".txt": true, ".json": true, ".jsonl": true, ".yaml": true, ".yml": true,
-		".toml": true, ".xml": true, ".html": true, ".css": true, ".js": true, ".jsx": true, ".ts": true,
-		".tsx": true, ".go": true, ".py": true, ".rb": true, ".rs": true, ".java": true, ".sql": true,
-		".sh": true, ".zsh": true, ".csv": true, ".tsv": true, ".env.example": true, ".gitignore": true,
-	}
-	text := knownText[extension] || strings.HasPrefix(mimeType, "text/") || (utf8.Valid(probe) && !bytes.ContainsRune(probe, '\x00'))
+	_, knownText := workspaceTextTypes[extension]
+	text := knownText || strings.HasPrefix(mimeType, "text/") || (utf8.Valid(probe) && !bytes.ContainsRune(probe, '\x00'))
 	if text && size <= maximumEditableFileBytes {
 		return "text", true
 	}
