@@ -27,12 +27,12 @@ import (
 	"github.com/nabu-sh/nabu/internal/integrations"
 	"github.com/nabu-sh/nabu/internal/runner"
 	"github.com/nabu-sh/nabu/internal/store"
+	"github.com/nabu-sh/nabu/internal/version"
 )
 
 const (
 	maxReadyTasks        = 5
 	maximumParallelTasks = store.MaximumParallelTasks
-	version              = "0.1.0"
 )
 
 type Executor interface {
@@ -560,7 +560,7 @@ func (o *Operator) Status(ctx context.Context) (domain.StatusSnapshot, error) {
 	snapshot := domain.StatusSnapshot{
 		Status: status, DisplayName: settings.DisplayName, SetupComplete: settings.SetupComplete,
 		MissionStarted: settings.MissionStarted, Paused: settings.Paused,
-		CodexAvailable: codexAvailable && codexState == "available", Version: version,
+		CodexAvailable: codexAvailable && codexState == "available", Version: version.Current(),
 		Activities: []domain.OperatorActivity{}, ChatQueued: chatQueued,
 		ReadyCount: readyCount, NeedsAttention: len(needs),
 	}

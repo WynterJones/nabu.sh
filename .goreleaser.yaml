@@ -1,0 +1,86 @@
+# GoReleaser cross-compiles both binaries and publishes them to GitHub
+# Releases. Everything here works because the daemon is CGo-free
+# (modernc.org/sqlite), so one Linux runner can build every target.
+#
+# Try a release without publishing:  goreleaser release --snapshot --clean
+version: 2
+
+project_name: nabu
+
+before:
+  hooks:
+    # The interface is compiled into the binaries with go:embed, so it has to
+    # exist before any Go build starts.
+    - npm --prefix frontend ci
+    - npm --prefix frontend run build
+    - sh -c 'rm -rf webassets/dist && mkdir -p webassets/dist && cp -R frontend/dist/. webassets/dist/'
+
+builds:
+  - id: nabu
+    main: ./cmd/nabu
+    binary: nabu
+    env:
+      - CGO_ENABLED=0
+    goos: [darwin, linux]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags: &stamp
+      - -s -w
+      - -X github.com/nabu-sh/nabu/internal/version.Version={{ .Version }}
+      - -X github.com/nabu-sh/nabu/internal/version.Commit={{ .ShortCommit }}
+      - -X github.com/nabu-sh/nabu/internal/version.Date={{ .Date }}
+    mod_timestamp: '{{ .CommitTimestamp }}'
+
+  - id: nabud
+    main: ./cmd/nabud
+    binary: nabud
+    env:
+      - CGO_ENABLED=0
+    goos: [darwin, linux]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags: *stamp
+    mod_timestamp: '{{ .CommitTimestamp }}'
+
+archives:
+  # One archive per platform holding both binaries, because neither is useful
+  # without the other.
+  - id: nabu
+    ids: [nabu, nabud]
+    name_template: 'nabu_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    formats: [tar.gz]
+    files:
+      - README.md
+      - LICENSE
+      - OPERATIONS.md
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+snapshot:
+  version_template: '{{ incpatch .Version }}-dev'
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - Merge pull request
+
+release:
+  draft: false
+  prerelease: auto
+  name_template: 'v{{ .Version }}'
+  footer: |
+    ## Install
+
+    ```sh
+    curl -fsSL https://nabu.sh/install.sh | bash
+    nabu setup
+    ```
+
+    Already installed? `nabu update` picks this up.

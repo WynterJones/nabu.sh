@@ -21,13 +21,11 @@ import (
 	"github.com/nabu-sh/nabu/internal/domain"
 	"github.com/nabu-sh/nabu/internal/service"
 	"github.com/nabu-sh/nabu/internal/store"
+	"github.com/nabu-sh/nabu/internal/version"
 	"github.com/nabu-sh/nabu/webassets"
 )
 
-const (
-	version    = "0.1.0"
-	defaultURL = "http://127.0.0.1:7777"
-)
+const defaultURL = "http://127.0.0.1:7777"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -85,7 +83,7 @@ func run(args []string) error {
 		fmt.Printf("Nabu's background service was removed. Your durable data remains at %s.\n", paths.Root)
 		return nil
 	case "version", "--version", "-v":
-		fmt.Println("nabu", version)
+		fmt.Println("nabu", version.String())
 		return nil
 	case "help", "--help", "-h":
 		usage()

@@ -110,13 +110,24 @@ Plus the plumbing you would otherwise build yourself:
 ## Quick start
 
 ```sh
-# 1. Install. Puts `nabu` and `nabud` in ~/.local/bin
+# 1. Install. Downloads a prebuilt binary for your machine, checks it against
+#    the release checksums, and puts nabu and nabud in ~/.local/bin
 curl -fsSL https://nabu.sh/install.sh | bash
 
 # 2. Set up. Checks Codex and Git, picks your workspaces, installs the
 #    background service, and opens the interface
 nabu setup
 ```
+
+Nothing is compiled, so no Go or Node toolchain is needed. To pick a specific
+build, or to install somewhere else:
+
+```sh
+NABU_VERSION=v0.2.0 NABU_INSTALL_DIR=/usr/local/bin \
+  curl -fsSL https://nabu.sh/install.sh | bash
+```
+
+Prefer to build it yourself? Clone the repository and run `./install.sh --from-source`.
 
 The interface lives at <http://127.0.0.1:7777>. The browser is only a window onto the
 daemon. Closing it stops nothing.
@@ -202,6 +213,24 @@ Issues and pull requests are welcome. A few things worth knowing before you star
 - The safety invariants in `internal/api` and the policy engine are the load-bearing part
   of this project. Changes there need tests.
 - Run the full verification block above before opening a pull request.
+
+### Cutting a release
+
+Releases are built by GitHub Actions from a version tag. GoReleaser
+cross-compiles both binaries for macOS and Linux on amd64 and arm64, which works
+because the daemon is CGo-free, and attaches the archives plus `checksums.txt`
+to the GitHub Release that `install.sh` reads.
+
+```sh
+git tag -a v0.2.0 -m "v0.2.0"
+git push origin v0.2.0
+```
+
+To rehearse the whole thing locally without publishing anything:
+
+```sh
+goreleaser release --snapshot --clean
+```
 
 ## License
 

@@ -2,10 +2,17 @@
 
 BIN_DIR ?= bin
 
+# Stamp the same fields the release pipeline stamps, so a local build reports
+# something meaningful instead of claiming to be a release.
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null)
+MODULE  := github.com/nabu-sh/nabu
+LDFLAGS := -X $(MODULE)/internal/version.Version=$(VERSION) -X $(MODULE)/internal/version.Commit=$(COMMIT)
+
 build: frontend
 	mkdir -p $(BIN_DIR)
-	go build -o $(BIN_DIR)/nabu ./cmd/nabu
-	go build -o $(BIN_DIR)/nabud ./cmd/nabud
+	go build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/nabu ./cmd/nabu
+	go build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/nabud ./cmd/nabud
 
 frontend:
 	cd frontend && npm ci && npm run build
