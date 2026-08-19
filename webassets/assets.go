@@ -5,7 +5,12 @@ import (
 	"io/fs"
 )
 
-//go:embed dist
+// The `all:` prefix keeps the placeholder inside dist/ eligible, since embed
+// skips files beginning with a dot by default. Without it the package fails to
+// compile on a clean checkout, before the frontend has been built. A real
+// build always populates dist/ first, and `nabu doctor` reports an empty one.
+//
+//go:embed all:dist
 var embedded embed.FS
 
 func FS() fs.FS {
