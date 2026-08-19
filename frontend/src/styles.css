@@ -600,6 +600,8 @@ button, select { cursor: pointer; }
   .chat-action-icon { @apply flex size-8 shrink-0 items-center justify-center rounded-md border border-accent/25 bg-accent/10 text-accent; }
   .chat-action-option { @apply flex min-w-0 flex-col items-start gap-1; }
   .chat-action-option > span { @apply max-w-56 pl-1 text-[11px] leading-relaxed text-muted; }
+  .chat-action-resolved { @apply mt-2.5 flex items-center gap-1.5 text-xs leading-5 text-accent; }
+  .chat-action-resolved strong { @apply font-semibold text-ink; }
 
   @supports (text-box: trim-both cap alphabetic) {
     .entity-reference-label { text-box: trim-both cap alphabetic; }
@@ -674,7 +676,10 @@ button, select { cursor: pointer; }
   .chat-thinking-pulse i:nth-child(2) { animation-delay: 140ms; }
   .chat-thinking-pulse i:nth-child(3) { animation-delay: 280ms; }
   .chat-scroll-button { @apply absolute bottom-[112px] left-1/2 z-10 -translate-x-1/2 rounded-full shadow-lg; }
-  .chat-assistant-markdown { @apply text-[15px] font-medium leading-7 sm:text-base; }
+  /* Both speakers share one type scale so neither reads as the smaller voice.
+     Weight, not size, is what distinguishes Nabu's replies. */
+  .chat-markdown { @apply text-[15px] leading-7 sm:text-base; }
+  .chat-assistant-markdown { @apply font-medium; }
   .thread-button { @apply mt-3 inline-flex size-8 items-center justify-center rounded-md border border-line bg-canvas text-muted outline-none transition-colors hover:border-[#48484f] hover:bg-raised hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent; }
   .chat-delete-button {
     @apply absolute -bottom-3 right-0 flex size-8 items-center justify-center rounded-md border border-line bg-canvas/95 text-muted opacity-0 outline-none transition-[opacity,color,background-color,border-color,box-shadow] hover:border-[#48484f] hover:bg-raised hover:text-danger focus-visible:border-line focus-visible:bg-raised focus-visible:text-danger focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;

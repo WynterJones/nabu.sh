@@ -108,6 +108,21 @@ export function ChatPage() {
     return [...messages, thinkingMessageFor(activeUser)]
   }, [messages, sending])
 
+  // An action card's option is sent verbatim as a chat message, so the answered
+  // options are exactly the user messages already in the conversation. Deriving
+  // the answered set from durable history keeps a resolved card resolved after
+  // navigating away and back, which local component state cannot do.
+  const answeredCardValues = useMemo(() => {
+    const values = new Set<string>()
+    for (const message of messages) if (message.role === 'user' && message.content) values.add(message.content.trim())
+    return values
+  }, [messages])
+  const answeredThreadValues = useMemo(() => {
+    const values = new Set(answeredCardValues)
+    for (const reply of threadReplies) if (reply.role === 'user' && reply.content) values.add(reply.content.trim())
+    return values
+  }, [answeredCardValues, threadReplies])
+
   const load = useCallback(async (scopeId?: string) => {
     const requestedScopeId = scopeId ?? scopeIdRef.current
     const requestId = ++historyRequestId.current
@@ -403,7 +418,7 @@ export function ChatPage() {
         ) : null}
         <ol className="chat-message-list" aria-live="polite">
           {hasMore ? <li className="flex justify-center pb-3"><Button variant="secondary" size="sm" onClick={() => void loadOlder()} disabled={loadingOlder}>{loadingOlder ? <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" /> : null}{loadingOlder ? 'Loading…' : 'Show older messages'}</Button></li> : null}
-          {visibleMessages.map((message) => <ChatMessageRow key={message.id} message={message} onOpenThread={() => void openThread(message)} onRequestDelete={setDeleteTarget} onCardMessage={continueFromCard} contextSetupIncomplete={Boolean(activeScope && !activeScope.contextReady)} />)}
+          {visibleMessages.map((message) => <ChatMessageRow key={message.id} message={message} onOpenThread={() => void openThread(message)} onRequestDelete={setDeleteTarget} onCardMessage={continueFromCard} answeredValues={answeredCardValues} contextSetupIncomplete={Boolean(activeScope && !activeScope.contextReady)} />)}
         </ol>
         </div>
 
@@ -419,11 +434,11 @@ export function ChatPage() {
         <div className="thread-panel-header"><h2 className="text-base font-semibold text-ink">Thread</h2><Button variant="ghost" size="icon" aria-label="Close thread" onClick={closeThread}><X className="size-4" /></Button></div>
         <div className="thread-layout">
           <div className="thread-conversation-scroll">
-            <div className="thread-root-section"><ol><ChatMessageRow message={threadRoot} inThread onRequestDelete={setDeleteTarget} onCardMessage={(message) => void sendReply(message)} contextSetupIncomplete={Boolean(activeScope && !activeScope.contextReady)} /></ol></div>
+            <div className="thread-root-section"><ol><ChatMessageRow message={threadRoot} inThread onRequestDelete={setDeleteTarget} onCardMessage={(message) => void sendReply(message)} answeredValues={answeredThreadValues} contextSetupIncomplete={Boolean(activeScope && !activeScope.contextReady)} /></ol></div>
             <div className="thread-replies-label"><span className="thread-replies-badge">{threadRoot.replyCount || threadReplies.length} {threadRoot.replyCount === 1 ? 'reply' : 'replies'}</span></div>
             <div className="thread-replies-scroll">
             {threadHasMore ? <div className="mb-3 flex justify-center"><Button variant="secondary" size="sm" onClick={() => void loadOlderReplies()} disabled={threadLoading}>{threadLoading ? <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" /> : null}Show older replies</Button></div> : null}
-            <ol>{threadLoading && !threadReplies.length ? <li className="thread-loading-row" role="status"><LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" /><span>Loading replies…</span></li> : null}{threadReplies.map((reply) => <ChatMessageRow key={reply.id} message={reply} inThread onRequestDelete={setDeleteTarget} onCardMessage={(message) => void sendReply(message)} />)}</ol>
+            <ol>{threadLoading && !threadReplies.length ? <li className="thread-loading-row" role="status"><LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" /><span>Loading replies…</span></li> : null}{threadReplies.map((reply) => <ChatMessageRow key={reply.id} message={reply} inThread onRequestDelete={setDeleteTarget} onCardMessage={(message) => void sendReply(message)} answeredValues={answeredThreadValues} />)}</ol>
             </div>
           </div>
           {error ? <div className="shrink-0 px-3 pt-3"><InlineError message={error} /></div> : null}
@@ -457,7 +472,7 @@ function ChatComposer({ value, onValueChange, onSend, busy, placeholder, label, 
   )
 }
 
-function ChatMessageRow({ message, onOpenThread, onRequestDelete, onCardMessage, contextSetupIncomplete = false, inThread = false }: { message: ChatMessage; onOpenThread?: () => void; onRequestDelete?: (message: ChatMessage) => void; onCardMessage?: (message: string) => void; contextSetupIncomplete?: boolean; inThread?: boolean }) {
+function ChatMessageRow({ message, onOpenThread, onRequestDelete, onCardMessage, answeredValues, contextSetupIncomplete = false, inThread = false }: { message: ChatMessage; onOpenThread?: () => void; onRequestDelete?: (message: ChatMessage) => void; onCardMessage?: (message: string) => void; answeredValues?: ReadonlySet<string>; contextSetupIncomplete?: boolean; inThread?: boolean }) {
   const user = message.role === 'user'
   const thinking = !user && isThinking(message)
   const legacyContextOffer = contextSetupIncomplete && !user && !message.references.some((reference) => reference.type === 'context_approval') && offersContextApproval(message.content)
@@ -482,10 +497,10 @@ function ChatMessageRow({ message, onOpenThread, onRequestDelete, onCardMessage,
             <span className="min-w-0 flex-1"><span className="chat-recovery-label">Continue task</span><strong>{message.recoveryTask.title}</strong></span>
             <ArrowUpRight className="size-4 shrink-0 text-muted" aria-hidden="true" />
           </Link> : null}
-          {message.content ? <Markdown className={!user ? 'chat-assistant-markdown' : undefined}>{message.content}</Markdown> : null}
+          {message.content ? <Markdown className={cn('chat-markdown', !user && 'chat-assistant-markdown')}>{message.content}</Markdown> : null}
           {message.error ? <p className="mt-2 text-xs text-danger">{message.error}</p> : null}
           {message.effects.some((effect) => effect.type !== 'conversation_only') ? <div className="chat-effects">{message.effects.filter((effect) => effect.type !== 'conversation_only').map((effect, index) => effect.actions?.length
-            ? <ChatActionCard key={`${effect.type}-${index}`} title={effect.summary} description={effect.details?.[0]} actions={effect.actions} onAction={(action) => onCardMessage?.(action.value)} />
+            ? <ChatActionCard key={`${effect.type}-${index}`} title={effect.summary} description={effect.details?.[0]} actions={effect.actions} answeredValues={answeredValues} onAction={(action) => onCardMessage?.(action.value)} />
             : <div key={`${effect.type}-${index}`} className={cn('chat-effect', effect.details?.length && 'chat-effect-detailed')}><CheckEffectIcon /><div className="min-w-0"><p className="chat-effect-summary">{effect.summary}</p>{effect.details?.length ? <ul className="mt-1 list-disc pl-4 text-xs leading-relaxed text-muted">{effect.details.map((detail) => <li key={detail}>{detail}</li>)}</ul> : null}</div></div>)}</div> : null}
           {entityReferences.length ? <div className="mt-3 space-y-1.5">{entityReferences.map((reference) => <EntityReferenceCard key={`${reference.type}-${reference.id}`} reference={reference} compact fluid showStatus={false} onMessage={onCardMessage} />)}</div> : null}
           {setupReferences.length ? <div className="chat-setup-references">{setupReferences.map((reference) => <EntityReferenceCard key={`${reference.type}-${reference.id}`} reference={reference} fluid onMessage={onCardMessage} />)}</div> : null}
